@@ -104,7 +104,7 @@ const CharacterCard = ({ character, onSave }) => {
       <div className="absolute inset-0  bg-opacity-40 z-5"></div>
 
       {/* Podatki o karakterju */}
-      <div className="relative leading-7 font-semibold  text-white text-lg z-10">
+      <div className="relative leading-6 font-semibold  text-white text-lg z-10">
         <CardTitle className="text-yellow-300 text-2xl">
           {character.name}
         </CardTitle>
