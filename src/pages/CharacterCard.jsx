@@ -1,8 +1,13 @@
-import { useState } from "react";
-import { Card, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+//*Glavna komponenta, ki prikaže kartico karakterja, omogoča urejanje in shranjevanje podatkov
 
+import { useState } from "react";
+import { Card } from "@/components/ui/card";
+import { toast } from "sonner";
+import CharacterDetails from "./CharacterDetails";
+import CharacterImage from "./CharacterImage";
+import CharacterActions from "./CharacterActions";
+
+//  Konstante za polja karakterja
 const fieldLabels = {
   height: "Height",
   mass: "Mass",
@@ -13,145 +18,65 @@ const fieldLabels = {
   gender: "Gender",
 };
 
-const fieldUnits = {
-  height: "cm",
-  mass: "kg",
-};
-
+const fieldUnits = { height: "cm", mass: "kg" };
 const numericFields = ["height", "mass"];
 const textFields = ["hair_color", "skin_color", "eye_color", "gender"];
 
 const CharacterCard = ({ character, onSave }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedCharacter, setEditedCharacter] = useState(character);
-
-  if (!character) return null;
-
+  const [editedCharacter, setEditedCharacter] = useState(character || {});
+  if (!character) return null; // Če ni podatkov, ne prikažemo ničesar
+  //  Upravljanje sprememb v vnosnih poljih
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    // Preveri, če je polje numerično in validiraj vnos
-    if (numericFields.includes(name)) {
-      // Dovoli prazen vnos za brisanje ali samo številke
-      if (value === "" || /^\d+$/.test(value)) {
-        setEditedCharacter({
-          ...editedCharacter,
-          [name]: value,
-        });
-      }
-    }
-    // Preveri, če je polje tekstovno in validiraj vnos
-    else if (textFields.includes(name)) {
-      // Dovoli prazen vnos za brisanje ali samo črke, presledke in vezaje
-      if (value === "" || /^[a-zA-Z\s-]+$/.test(value)) {
-        setEditedCharacter({
-          ...editedCharacter,
-          [name]: value,
-        });
-      }
-    }
-    // Za ostala polja (npr. birth_year) dovoli vse znake
-    else {
-      setEditedCharacter({
-        ...editedCharacter,
-        [name]: value,
-      });
+    // Nastavimo vrednost le, če ustreza tipu podatkov
+    if (
+      (numericFields.includes(name) && (value === "" || /^\d+$/.test(value))) ||
+      (textFields.includes(name) && /^[a-zA-Z\s-]*$/.test(value)) ||
+      (!numericFields.includes(name) && !textFields.includes(name))
+    ) {
+      setEditedCharacter({ ...editedCharacter, [name]: value });
     }
   };
-
+  //  Shranjevanje sprememb
   const handleSave = () => {
-    // Preveri prazna polja
-    const hasEmptyFields = Object.entries(editedCharacter).some(
-      ([key, value]) => {
-        return fieldLabels[key] && value.toString().trim() === "";
-      }
+    const isEmpty = Object.entries(fieldLabels).some(
+      ([key]) => !editedCharacter[key]?.trim()
     );
-
-    if (hasEmptyFields) {
+    if (isEmpty) {
       toast.error("All fields must be filled out!");
       return;
     }
-
     onSave(editedCharacter);
     toast.success("Character updated!");
     setIsEditing(false);
   };
-
+  //  Preklic urejanja
   const handleCancel = () => {
     setEditedCharacter(character);
     setIsEditing(false);
   };
-
-  const formatFieldValue = (key, value) => {
-    if (fieldUnits[key] && value) {
-      return `${value} ${fieldUnits[key]}`;
-    }
-    return value;
-  };
-
+  // Dodajanje enot k vrednostim
+  const formatFieldValue = (key, value) =>
+    fieldUnits[key] && value ? `${value} ${fieldUnits[key]}` : value;
   return (
     <Card className="w-[300px] h-[500px] flex flex-col border-none justify-end p-4 mt-10 overflow-hidden shadow-[0_0_100px_40px_rgba(253,224,71,0.4)] relative">
-      {/* Slika karakterja */}
-      <div className="absolute inset-0 z-0">
-        <img
-          src={character.imageUrl}
-          alt={character.name}
-          className="object-cover w-full h-full"
-        />
-      </div>
-
-      {/* Overlay za berljivost */}
-      <div className="absolute inset-0  bg-opacity-40 z-5"></div>
-
-      {/* Podatki o karakterju */}
-      <div className="relative leading-6 font-semibold  text-white text-lg z-10">
-        <CardTitle className="text-yellow-300 text-2xl">
-          {character.name}
-        </CardTitle>
-        {Object.entries(fieldLabels).map(([key, label]) => (
-          <p key={key}>
-            {label}:{" "}
-            {isEditing ? (
-              <input
-                type={numericFields.includes(key) ? "number" : "text"}
-                name={key}
-                value={editedCharacter[key]}
-                onChange={handleChange}
-                className="bg-transparent border-b-2 border-yellow-300 text-white"
-              />
-            ) : (
-              formatFieldValue(key, editedCharacter[key])
-            )}
-          </p>
-        ))}
-      </div>
-
-      {/* Gumbi za urejanje */}
-      <div className="flex flex-row justify-center mt-4 relative z-10">
-        {isEditing ? (
-          <>
-            <Button
-              onClick={handleSave}
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-            >
-              Save
-            </Button>
-            <Button
-              onClick={handleCancel}
-              className="bg-red-500 text-white hover:bg-red-600 px-4 py-2 rounded ml-2"
-            >
-              Cancel
-            </Button>
-          </>
-        ) : (
-          <Button
-            onClick={() => setIsEditing(true)}
-            className="bg-yellow-400 text-black px-4 hover:bg-yellow-500 py-2 rounded"
-          >
-            Edit
-          </Button>
-        )}
-      </div>
+      <CharacterImage imageUrl={character.imageUrl} name={character.name} />
+      <CharacterDetails
+        character={character}
+        isEditing={isEditing}
+        editedCharacter={editedCharacter}
+        handleChange={handleChange}
+        formatFieldValue={formatFieldValue}
+        fieldLabels={fieldLabels}
+        numericFields={numericFields}
+      />
+      <CharacterActions
+        isEditing={isEditing}
+        handleSave={handleSave}
+        handleCancel={handleCancel}
+        setIsEditing={setIsEditing}
+      />
     </Card>
   );
 };
